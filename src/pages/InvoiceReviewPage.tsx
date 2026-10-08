@@ -44,8 +44,17 @@ export const InvoiceReviewPage: React.FC<InvoiceReviewPageProps> = ({
     getInvoiceById(invoiceId)
       .then((inv) => {
         if (mounted) {
+          const processedItems = (inv.items || []).map((it) => {
+            const qty = Number(it.quantity) || 1;
+            const rate = Number(it.unit_rate) || 0;
+            const taxable = Number(it.taxable_value) || 0;
+            if (rate === 0 && taxable > 0) {
+              return { ...it, quantity: qty, unit_rate: Math.round((taxable / qty) * 100) / 100 };
+            }
+            return it;
+          });
           setInvoice(inv);
-          setItems(inv.items || []);
+          setItems(processedItems);
         }
       })
       .catch((err) => {

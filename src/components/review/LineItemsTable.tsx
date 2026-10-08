@@ -49,20 +49,20 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse text-xs">
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold uppercase tracking-wider text-[11px]">
-              <th className="px-3 py-3 w-10 text-center">#</th>
-              <th className="px-3 py-3 min-w-[320px]">Item Description</th>
-              <th className="px-3 py-3 w-28 text-center">HSN/SAC</th>
-              <th className="px-3 py-3 w-20 text-right">Qty</th>
-              <th className="px-3 py-3 w-16 text-center">Unit</th>
-              <th className="px-3 py-3 w-28 text-right">Rate (₹)</th>
-              <th className="px-3 py-3 w-24 text-right">Disc (₹)</th>
-              <th className="px-3 py-3 w-32 text-right">Taxable (₹)</th>
-              <th className="px-3 py-3 w-20 text-right">CGST %</th>
-              <th className="px-3 py-3 w-20 text-right">SGST %</th>
-              <th className="px-3 py-3 w-20 text-right">IGST %</th>
-              <th className="px-3 py-3 w-32 text-right">Total (₹)</th>
-              {!isReadOnly && <th className="px-2 py-3 w-10 text-center" aria-label="Actions" />}
+            <tr className="bg-slate-100 border-b border-slate-300 text-slate-800 font-bold uppercase tracking-wider text-xs">
+              <th className="px-3 py-3.5 w-12 text-center">#</th>
+              <th className="px-4 py-3.5 min-w-[340px]">Item Description</th>
+              <th className="px-3 py-3.5 w-32 text-center">HSN/SAC</th>
+              <th className="px-3 py-3.5 w-32 text-center">Qty</th>
+              <th className="px-3 py-3.5 w-24 text-center">Unit</th>
+              <th className="px-3 py-3.5 w-36 text-right">Rate (₹)</th>
+              <th className="px-3 py-3.5 w-32 text-right">Disc (₹)</th>
+              <th className="px-3 py-3.5 w-40 text-right">Taxable (₹)</th>
+              <th className="px-3 py-3.5 w-24 text-center">CGST %</th>
+              <th className="px-3 py-3.5 w-24 text-center">SGST %</th>
+              <th className="px-3 py-3.5 w-24 text-center">IGST %</th>
+              <th className="px-3 py-3.5 w-44 text-right">Total (₹)</th>
+              {!isReadOnly && <th className="px-2 py-3.5 w-12 text-center" aria-label="Actions" />}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -77,134 +77,141 @@ export const LineItemsTable: React.FC<LineItemsTableProps> = ({
                 return (
                   <tr key={item.id || index} className="hover:bg-slate-50/80 transition-colors">
                     {/* Index */}
-                    <td className="px-3 py-2 text-center font-mono text-slate-400 text-xs">
+                    <td className="px-3 py-3 text-center font-mono font-bold text-slate-500 text-sm">
                       {index + 1}
                     </td>
 
                     {/* Description */}
-                    <td className="px-3 py-2">
+                    <td className="px-4 py-3">
                       <input
                         type="text"
                         disabled={isReadOnly}
                         value={item.item_description}
                         onChange={(e) => onItemChange(index, 'item_description', e.target.value)}
-                        className="w-full px-2 py-1.5 border border-transparent hover:border-slate-300 focus:border-slate-800 focus:bg-white focus:ring-1 focus:ring-slate-800 rounded text-sm text-slate-900 transition-colors disabled:bg-transparent"
+                        className="w-full px-3 py-2 border border-slate-300 hover:border-slate-400 focus:border-slate-900 focus:bg-white focus:ring-2 focus:ring-slate-900 rounded-md text-base font-medium text-slate-900 transition-colors disabled:bg-slate-50 disabled:border-slate-200"
                       />
                     </td>
 
                     {/* HSN/SAC */}
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-3">
                       <input
                         type="text"
                         disabled={isReadOnly}
                         value={item.hsn_sac || ''}
+                        placeholder="8471"
                         onChange={(e) => onItemChange(index, 'hsn_sac', e.target.value)}
-                        className="w-full text-center px-1.5 py-1.5 font-mono text-sm border border-transparent hover:border-slate-300 focus:border-slate-800 focus:bg-white focus:ring-1 focus:ring-slate-800 rounded text-slate-900 transition-colors disabled:bg-transparent"
+                        className="w-full text-center px-2 py-2 font-mono text-base font-bold border border-slate-300 hover:border-slate-400 focus:border-slate-900 focus:bg-white focus:ring-2 focus:ring-slate-900 rounded-md text-slate-900 transition-colors disabled:bg-slate-50 disabled:border-slate-200 placeholder:text-slate-400"
                       />
                     </td>
 
                     {/* Quantity */}
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-3">
                       <input
                         type="number"
                         step="any"
                         disabled={isReadOnly}
-                        value={item.quantity}
+                        value={item.quantity === 0 ? '' : item.quantity}
+                        placeholder="1"
                         onChange={(e) =>
-                          onItemChange(index, 'quantity', parseFloat(e.target.value) || 0)
+                          onItemChange(index, 'quantity', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)
                         }
-                        className="w-full text-right px-1.5 py-1.5 font-mono text-sm border border-transparent hover:border-slate-300 focus:border-slate-800 focus:bg-white focus:ring-1 focus:ring-slate-800 rounded text-slate-900 transition-colors disabled:bg-transparent"
+                        className="w-full text-center px-2 py-2 font-mono text-base font-extrabold border border-slate-300 hover:border-slate-400 focus:border-slate-900 focus:bg-white focus:ring-2 focus:ring-slate-900 rounded-md text-slate-900 transition-colors disabled:bg-slate-50 disabled:border-slate-200 placeholder:text-slate-400"
                       />
                     </td>
 
                     {/* Unit */}
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-3">
                       <input
                         type="text"
                         disabled={isReadOnly}
                         value={item.unit || 'PCS'}
                         onChange={(e) => onItemChange(index, 'unit', e.target.value.toUpperCase())}
-                        className="w-full uppercase text-center px-1 py-1.5 font-mono text-xs border border-transparent hover:border-slate-300 focus:border-slate-800 focus:bg-white focus:ring-1 focus:ring-slate-800 rounded text-slate-700 transition-colors disabled:bg-transparent"
+                        className="w-full uppercase text-center px-2 py-2 font-mono text-sm font-bold border border-slate-300 hover:border-slate-400 focus:border-slate-900 focus:bg-white focus:ring-2 focus:ring-slate-900 rounded-md text-slate-800 transition-colors disabled:bg-slate-50 disabled:border-slate-200"
                       />
                     </td>
 
                     {/* Unit Rate */}
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-3">
                       <input
                         type="number"
                         step="0.01"
                         disabled={isReadOnly}
-                        value={item.unit_rate}
+                        value={item.unit_rate === 0 ? '' : item.unit_rate}
+                        placeholder="0.00"
                         onChange={(e) =>
-                          onItemChange(index, 'unit_rate', parseFloat(e.target.value) || 0)
+                          onItemChange(index, 'unit_rate', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)
                         }
-                        className="w-full text-right px-1.5 py-1.5 font-mono text-sm border border-transparent hover:border-slate-300 focus:border-slate-800 focus:bg-white focus:ring-1 focus:ring-slate-800 rounded text-slate-900 transition-colors disabled:bg-transparent"
+                        className="w-full text-right px-3 py-2 font-mono text-base font-bold border border-slate-300 hover:border-slate-400 focus:border-slate-900 focus:bg-white focus:ring-2 focus:ring-slate-900 rounded-md text-slate-900 transition-colors disabled:bg-slate-50 disabled:border-slate-200 placeholder:text-slate-400"
                       />
                     </td>
 
                     {/* Discount */}
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-3">
                       <input
                         type="number"
                         step="0.01"
                         disabled={isReadOnly}
-                        value={item.discount_amount}
+                        value={item.discount_amount === 0 ? '' : item.discount_amount}
+                        placeholder="0.00"
                         onChange={(e) =>
-                          onItemChange(index, 'discount_amount', parseFloat(e.target.value) || 0)
+                          onItemChange(index, 'discount_amount', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)
                         }
-                        className="w-full text-right px-1.5 py-1.5 font-mono text-sm border border-transparent hover:border-slate-300 focus:border-slate-800 focus:bg-white focus:ring-1 focus:ring-slate-800 rounded text-slate-600 transition-colors disabled:bg-transparent"
+                        className="w-full text-right px-2.5 py-2 font-mono text-base font-semibold border border-slate-300 hover:border-slate-400 focus:border-slate-900 focus:bg-white focus:ring-2 focus:ring-slate-900 rounded-md text-slate-700 transition-colors disabled:bg-slate-50 disabled:border-slate-200 placeholder:text-slate-400"
                       />
                     </td>
 
                     {/* Taxable Value */}
-                    <td className="px-3 py-2 text-right font-mono font-medium text-slate-900 text-sm">
+                    <td className="px-3 py-3 text-right font-mono font-extrabold text-slate-950 text-base">
                       ₹{Number(item.taxable_value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
 
                     {/* CGST Rate */}
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-3">
                       <input
                         type="number"
                         step="0.5"
                         disabled={isReadOnly}
-                        value={item.cgst_rate}
+                        value={item.cgst_rate === 0 ? '' : item.cgst_rate}
+                        placeholder="0"
                         onChange={(e) =>
-                          onItemChange(index, 'cgst_rate', parseFloat(e.target.value) || 0)
+                          onItemChange(index, 'cgst_rate', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)
                         }
-                        className="w-full text-right px-1 py-1.5 font-mono text-xs border border-transparent hover:border-slate-300 focus:border-slate-800 focus:bg-white focus:ring-1 focus:ring-slate-800 rounded text-slate-800 transition-colors disabled:bg-transparent"
+                        className="w-full text-center px-1.5 py-2 font-mono text-base font-bold border border-slate-300 hover:border-slate-400 focus:border-slate-900 focus:bg-white focus:ring-2 focus:ring-slate-900 rounded-md text-slate-900 transition-colors disabled:bg-slate-50 disabled:border-slate-200 placeholder:text-slate-400"
                       />
                     </td>
 
                     {/* SGST Rate */}
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-3">
                       <input
                         type="number"
                         step="0.5"
                         disabled={isReadOnly}
-                        value={item.sgst_rate}
+                        value={item.sgst_rate === 0 ? '' : item.sgst_rate}
+                        placeholder="0"
                         onChange={(e) =>
-                          onItemChange(index, 'sgst_rate', parseFloat(e.target.value) || 0)
+                          onItemChange(index, 'sgst_rate', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)
                         }
-                        className="w-full text-right px-1 py-1.5 font-mono text-xs border border-transparent hover:border-slate-300 focus:border-slate-800 focus:bg-white focus:ring-1 focus:ring-slate-800 rounded text-slate-800 transition-colors disabled:bg-transparent"
+                        className="w-full text-center px-1.5 py-2 font-mono text-base font-bold border border-slate-300 hover:border-slate-400 focus:border-slate-900 focus:bg-white focus:ring-2 focus:ring-slate-900 rounded-md text-slate-900 transition-colors disabled:bg-slate-50 disabled:border-slate-200 placeholder:text-slate-400"
                       />
                     </td>
 
                     {/* IGST Rate */}
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-3">
                       <input
                         type="number"
                         step="0.5"
                         disabled={isReadOnly}
-                        value={item.igst_rate}
+                        value={item.igst_rate === 0 ? '' : item.igst_rate}
+                        placeholder="0"
                         onChange={(e) =>
-                          onItemChange(index, 'igst_rate', parseFloat(e.target.value) || 0)
+                          onItemChange(index, 'igst_rate', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)
                         }
-                        className="w-full text-right px-1 py-1.5 font-mono text-xs border border-transparent hover:border-slate-300 focus:border-slate-800 focus:bg-white focus:ring-1 focus:ring-slate-800 rounded text-slate-800 transition-colors disabled:bg-transparent"
+                        className="w-full text-center px-1.5 py-2 font-mono text-base font-bold border border-slate-300 hover:border-slate-400 focus:border-slate-900 focus:bg-white focus:ring-2 focus:ring-slate-900 rounded-md text-slate-900 transition-colors disabled:bg-slate-50 disabled:border-slate-200 placeholder:text-slate-400"
                       />
                     </td>
 
                     {/* Total Amount */}
-                    <td className="px-3 py-2 text-right font-mono font-bold text-slate-900 text-sm">
+                    <td className="px-3 py-3 text-right font-mono font-black text-slate-950 text-lg">
                       ₹{Number(item.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
 

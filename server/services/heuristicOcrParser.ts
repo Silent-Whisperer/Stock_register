@@ -1,5 +1,5 @@
 import { ExtractedInvoicePayload, validateAndAuditInvoice, ExtractedLineItem } from './validationService';
-import { cleanAmount, normalizeGstin, toIsoDate } from './ocrFormatters';
+import { cleanAmount, normalizeGstin, toIsoDate, extractInvoiceNumber } from './ocrFormatters';
 import { reconcileGstTaxation } from './gstReconciliation';
 
 /**
@@ -138,14 +138,7 @@ export function parseInvoiceWithHeuristics(
   }
 
   // 5. Invoice Number & Date
-  let invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
-  const slashPattern = clean.match(/\b([A-Z0-9-]{2,10}\/[A-Z0-9-]{2,10}(?:\/[A-Z0-9-]{2,10})?)\b/);
-  if (slashPattern) {
-    invoiceNumber = slashPattern[1].trim().replace(/^SV/i, 'SI');
-  } else {
-    const gemMatch = clean.match(/\b(GEM-[0-9A-Z]+)\b/i);
-    if (gemMatch) invoiceNumber = gemMatch[1].toUpperCase();
-  }
+  const invoiceNumber = extractInvoiceNumber(clean);
 
   let invoiceDate = new Date().toISOString().split('T')[0];
   const datePattern =
@@ -225,6 +218,27 @@ export function parseInvoiceWithHeuristics(
       confidence_score: 0.98,
       flags: [],
     });
+  }
+
+  // Ensure every item has unit_rate, taxable_value, and totals properly populated
+  for (const it of items) {
+    if (it.taxable_value <= 0 && taxableValue > 0 && items.length === 1) {
+      it.taxable_value = taxableValue;
+    }
+    if (it.unit_rate <= 0 && it.taxable_value > 0 && it.quantity > 0) {
+      it.unit_rate = Math.round((it.taxable_value / it.quantity) * 100) / 100;
+    }
+    if (it.total_amount <= 0 && grandTotal > 0 && items.length === 1) {
+      it.total_amount = grandTotal;
+    }
+    if (it.cgst_rate <= 0 && taxRatePercent > 0) {
+      it.cgst_rate = taxRatePercent;
+      it.cgst_amount = cgstAmount;
+    }
+    if (it.sgst_rate <= 0 && taxRatePercent > 0) {
+      it.sgst_rate = taxRatePercent;
+      it.sgst_amount = sgstAmount;
+    }
   }
 
   // 7. Statutory GST Reconciliation

@@ -79,20 +79,21 @@ export const InvoiceHeaderForm: React.FC<InvoiceHeaderFormProps> = ({
       {/* Invoice Identifiers */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">
+          <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">
             Invoice Number <span className="text-rose-500">*</span>
           </label>
           <input
             type="text"
             disabled={isReadOnly}
             value={invoice.invoice_number || ''}
+            placeholder="e.g. AB/26-27/1234"
             onChange={(e) => onChange('invoice_number', e.target.value)}
-            className="w-full h-9 px-3 border border-slate-300 rounded-md text-sm text-slate-900 font-medium focus:outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 disabled:bg-slate-50"
+            className="w-full h-11 px-3 border border-slate-300 rounded-md text-base text-slate-950 font-bold font-mono focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-slate-900 disabled:bg-slate-50 placeholder:font-normal placeholder:text-slate-400"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">
+          <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">
             Invoice Date <span className="text-rose-500">*</span>
           </label>
           <input
@@ -100,18 +101,18 @@ export const InvoiceHeaderForm: React.FC<InvoiceHeaderFormProps> = ({
             disabled={isReadOnly}
             value={toIsoDate(invoice.invoice_date)}
             onChange={(e) => onChange('invoice_date', e.target.value)}
-            className="w-full h-9 px-3 border border-slate-300 rounded-md text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 disabled:bg-slate-50"
+            className="w-full h-11 px-3 border border-slate-300 rounded-md text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-slate-900 disabled:bg-slate-50"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">Due Date</label>
+          <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">Due Date</label>
           <input
             type="date"
             disabled={isReadOnly}
             value={toIsoDate(invoice.due_date)}
             onChange={(e) => onChange('due_date', e.target.value)}
-            className="w-full h-9 px-3 border border-slate-300 rounded-md text-sm text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 disabled:bg-slate-50"
+            className="w-full h-11 px-3 border border-slate-300 rounded-md text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-slate-900 disabled:bg-slate-50"
           />
         </div>
       </div>

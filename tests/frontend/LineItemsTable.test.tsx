@@ -45,6 +45,8 @@ describe('LineItemsTable Component', () => {
     );
 
     expect(screen.getByDisplayValue('Precision Stainless Washer')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('200')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('7318')).toBeInTheDocument();
     expect(screen.getByText('Add Line Item')).toBeInTheDocument();
   });
 });

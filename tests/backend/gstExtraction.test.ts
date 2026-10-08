@@ -1,9 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { cleanAmount, normalizeGstin } from '../../server/services/ocrFormatters';
+import { cleanAmount, normalizeGstin, extractInvoiceNumber } from '../../server/services/ocrFormatters';
 import { reconcileGstTaxation } from '../../server/services/gstReconciliation';
 import { parseInvoiceWithHeuristics } from '../../server/services/heuristicOcrParser';
 
 describe('GST Extraction and Mathematical Reconciliation', () => {
+  it('should extract and normalize Indian GST financial year invoice numbers (e.g. AB/26-27/1234, SI/26-27/0347)', () => {
+    expect(extractInvoiceNumber('Invoice No: AB/26-27/1234')).toBe('AB/26-27/1234');
+    expect(extractInvoiceNumber('Invoice No.\nSI/26-27/0347\nBuyer Order: 155/IIT/SRIC')).toBe('SI/26-27/0347');
+    expect(extractInvoiceNumber('Tax Invoice SI / 26-27 / 0347')).toBe('SI/26-27/0347');
+    expect(extractInvoiceNumber('Invoice No. SV/26-27/0347')).toBe('SI/26-27/0347');
+    expect(extractInvoiceNumber('Invoice No. S1/26-27/0347')).toBe('SI/26-27/0347');
+  });
   it('should clean all Indian currency notations, negative amounts, and 3-decimal currencies', () => {
     expect(cleanAmount('Rs. 39498.84')).toBe(39498.84);
     expect(cleanAmount('Rs. 3554.900')).toBe(3554.9);

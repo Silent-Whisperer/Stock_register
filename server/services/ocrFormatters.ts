@@ -119,3 +119,69 @@ export function toIsoDate(raw?: string | null): string {
   }
   return new Date().toISOString().split('T')[0];
 }
+
+/**
+ * Deterministically extracts and standardizes an Indian GST invoice number
+ * following the standard Financial Year pattern: [PREFIX]/[YY-YY]/[SERIAL] (e.g. AB/26-27/1234 or SI/26-27/0347).
+ * Filters out false positives like Buyer's Order No, Challan No, or dates.
+ *
+ * @param text - Raw plain text recognized from OCR.
+ * @returns {string} Standardized invoice number.
+ */
+export function extractInvoiceNumber(text: string): string {
+  if (!text) return 'INV/26-27/0001';
+
+  // 1. Explicit search near labels: "Invoice No", "Inv No", "Bill No"
+  const labelMatches = [
+    ...text.matchAll(
+      /(?:Tax\s*Invoice\s*(?:No\.?|Number)|Invoice\s*(?:No\.?|Number)|Inv\s*No\.?|Bill\s*No\.?)\s*[:.\t-]?\s*\n?\s*([A-Za-z0-9]+(?:\s*[\/-]\s*[A-Za-z0-9]+)+)/gi
+    ),
+  ];
+
+  for (const lm of labelMatches) {
+    let candidate = lm[1].replace(/\s+/g, '').toUpperCase();
+    if (!candidate.includes('SRIC') && !candidate.includes('COMP') && !candidate.includes('DDF') && !candidate.includes('IIT')) {
+      if (candidate.startsWith('S1/')) candidate = candidate.replace(/^S1\//, 'SI/');
+      if (candidate.startsWith('SV/')) candidate = candidate.replace(/^SV\//, 'SI/');
+      return candidate;
+    }
+  }
+
+  // 2. Direct search for Indian GST standard FY pattern: e.g. AB/26-27/1234, SI/26-27/0347, SI/2026-27/0347
+  const standardFyMatches = [
+    ...text.matchAll(/\b([A-Za-z0-9]{2,8})\s*\/\s*(\d{2,4}-\d{2})\s*\/\s*([A-Za-z0-9]{1,8})\b/gi),
+  ];
+
+  for (const m of standardFyMatches) {
+    const prefix = m[1].toUpperCase();
+    const fy = m[2];
+    const serial = m[3].toUpperCase();
+
+    // Exclude if prefix is clearly an institutional order code
+    if (/^(?:IIT|SRIC|COMP|AG|DDF|PO|ORD|REF)$/i.test(prefix)) continue;
+
+    let cleanedPrefix = prefix;
+    if (cleanedPrefix === 'S1' || cleanedPrefix === 'SV') cleanedPrefix = 'SI';
+
+    return `${cleanedPrefix}/${fy}/${serial}`;
+  }
+
+  // 3. Fallback: Any 2-3 segment slash pattern excluding institutional PO codes
+  const slashMatches = [...text.matchAll(/\b([A-Za-z0-9-]{2,8}\/[A-Za-z0-9-]{2,8}(?:\/[A-Za-z0-9-]{2,8})?)\b/g)];
+  for (const sm of slashMatches) {
+    const candidate = sm[1].toUpperCase();
+    if (!candidate.includes('SRIC') && !candidate.includes('COMP') && !candidate.includes('IIT') && !candidate.includes('DDF')) {
+      return candidate.replace(/^S1\//, 'SI/').replace(/^SV\//, 'SI/');
+    }
+  }
+
+  // 4. Fallback: GeM invoice
+  const gemMatch = text.match(/\b(GEM-[0-9A-Z]+)\b/i);
+  if (gemMatch) return gemMatch[1].toUpperCase();
+
+  // 5. Default generated fallback in standard Indian GST FY format (AB/26-27/1234)
+  const currYear = new Date().getFullYear() % 100;
+  const nextYear = (currYear + 1) % 100;
+  return `AB/${currYear}-${nextYear}/1001`;
+}
+

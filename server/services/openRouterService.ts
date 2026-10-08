@@ -109,6 +109,10 @@ export async function extractInvoiceWithOpenRouter(
   },
   "discrepancies": []
 }
+IMPORTANT INVOICE NUMBER FORMAT:
+Indian GST invoices follow the standard Financial Year format: [PREFIX]/[YY-YY]/[SERIAL_NUMBER] (e.g. "AB/26-27/1234", "SI/26-27/0347", "INV/25-26/0042").
+- Extract the exact Invoice Number adhering to this standard format.
+- Do NOT confuse Invoice Number with Buyer's Order No, PO No, or Dispatch Doc No.
 Output strictly valid JSON. Do not fabricate missing numbers.`;
 
   let finalPrompt = prompt;
