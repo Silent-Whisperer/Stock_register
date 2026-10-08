@@ -159,8 +159,17 @@ export const InvoiceReviewPage: React.FC<InvoiceReviewPageProps> = ({
     if (!invoice) return;
     setSaving(true);
     try {
-      await updateInvoiceAndItems(invoice.id, invoice, items);
-      await approveInvoiceAndMutateStock(invoice.id, user?.id || 'admin-user');
+      const approvedInvoice: Invoice = {
+        ...invoice,
+        status: 'APPROVED',
+        approved_at: new Date().toISOString(),
+        approved_by: user?.id || 'operator',
+        updated_at: new Date().toISOString(),
+      };
+      setInvoice(approvedInvoice);
+
+      await updateInvoiceAndItems(invoice.id, approvedInvoice, items);
+      await approveInvoiceAndMutateStock(invoice.id, user?.id || 'operator');
       notifySuccess('Invoice Approved', 'Invoice approved and verified successfully.');
       onApproved();
     } catch (err: any) {

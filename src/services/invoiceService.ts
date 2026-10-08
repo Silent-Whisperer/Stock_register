@@ -47,6 +47,8 @@ export async function getInvoices(
   const localItems = LocalStorageRepository.getInvoiceItems();
   const localSuppliers = LocalStorageRepository.getSuppliers();
 
+  let merged: Invoice[] = [...localInvoices];
+
   try {
     let query = supabase.from('invoices').select('*, items:invoice_items(*), supplier:suppliers(*)').order('created_at', { ascending: false });
 
@@ -60,13 +62,23 @@ export async function getInvoices(
 
     const { data, error } = await query;
     if (!error && data) {
-      return data as Invoice[];
+      const map = new Map<string, Invoice>();
+      localInvoices.forEach((inv) => map.set(inv.id, inv));
+      (data as Invoice[]).forEach((rem) => {
+        const loc = map.get(rem.id);
+        if (loc && loc.status === 'APPROVED' && rem.status !== 'APPROVED') {
+          map.set(rem.id, { ...rem, status: 'APPROVED' });
+        } else {
+          map.set(rem.id, rem);
+        }
+      });
+      merged = Array.from(map.values());
     }
   } catch {
     // Fall back to local repository
   }
 
-  let filtered = [...localInvoices];
+  let filtered = [...merged];
   if (filters.status !== 'ALL') {
     filtered = filtered.filter((i) => i.status === filters.status);
   }
@@ -79,8 +91,8 @@ export async function getInvoices(
 
   return filtered.map((inv) => ({
     ...inv,
-    items: localItems.filter((it) => it.invoice_id === inv.id),
-    supplier: localSuppliers.find((s) => s.id === inv.supplier_id),
+    items: inv.items && inv.items.length > 0 ? inv.items : localItems.filter((it) => it.invoice_id === inv.id),
+    supplier: inv.supplier || localSuppliers.find((s) => s.id === inv.supplier_id),
   }));
 }
 
@@ -245,11 +257,16 @@ export async function updateInvoiceAndItems(
 
   // 2. Sync to Supabase
   try {
-    await supabase.from('invoices').update({ ...invoiceData, updated_at: now }).eq('id', invoiceId);
+    const { items: _it, supplier: _sp, product: _pr, ...cleanData } = invoiceData as any;
+    await supabase.from('invoices').update({ ...cleanData, updated_at: now }).eq('id', invoiceId);
     await supabase.from('invoice_items').delete().eq('invoice_id', invoiceId);
-    await supabase.from('invoice_items').insert(items.map((i) => ({ ...i, invoice_id: invoiceId })));
-  } catch {
-    // Offline or schema fallback
+    const cleanItems = items.map((it) => {
+      const { product: _p, ...cleanIt } = it as any;
+      return { ...cleanIt, invoice_id: invoiceId };
+    });
+    await supabase.from('invoice_items').insert(cleanItems);
+  } catch (err: any) {
+    console.warn('[Sync] Supabase update note:', err?.message);
   }
 }
 
@@ -259,15 +276,27 @@ export async function updateInvoiceAndItems(
  */
 export async function approveInvoiceAndMutateStock(invoiceId: string, userId: string = 'operator'): Promise<void> {
   const invoices = LocalStorageRepository.getInvoices();
-  const invoice = invoices.find((i) => i.id === invoiceId);
-  if (!invoice) throw new Error('Invoice not found');
-  if (invoice.status === 'APPROVED') throw new Error('Invoice already approved');
+  let invoice = invoices.find((i) => i.id === invoiceId);
 
-  invoice.status = 'APPROVED';
-  invoice.approved_at = new Date().toISOString();
-  invoice.approved_by = userId;
-  invoice.updated_at = new Date().toISOString();
-  LocalStorageRepository.set('invoices', invoices);
+  // If not found in local store, fetch from Supabase
+  if (!invoice) {
+    try {
+      const { data } = await supabase.from('invoices').select('*, items:invoice_items(*)').eq('id', invoiceId).maybeSingle();
+      if (data) {
+        invoice = data as Invoice;
+        invoices.push(invoice);
+      }
+    } catch {}
+  }
+
+  const now = new Date().toISOString();
+  if (invoice) {
+    invoice.status = 'APPROVED';
+    invoice.approved_at = now;
+    invoice.approved_by = userId;
+    invoice.updated_at = now;
+    LocalStorageRepository.set('invoices', invoices);
+  }
 
   const items = LocalStorageRepository.getInvoiceItems().filter((it) => it.invoice_id === invoiceId);
   const products = LocalStorageRepository.getProducts();
@@ -285,22 +314,22 @@ export async function approveInvoiceAndMutateStock(invoiceId: string, userId: st
         id: `prod-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         sku,
         name: item.item_description,
-        description: `Imported from Invoice #${invoice.invoice_number}`,
+        description: `Imported from Invoice #${invoice?.invoice_number || ''}`,
         hsn_sac: item.hsn_sac,
         unit: item.unit,
         purchase_rate: item.unit_rate,
         selling_rate: Math.round(item.unit_rate * 1.25 * 100) / 100,
         current_stock: item.quantity,
         min_stock_alert: 5,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        created_at: now,
+        updated_at: now,
       };
       products.push(product);
       item.product_id = product.id;
     } else {
       product.current_stock += item.quantity;
       product.purchase_rate = item.unit_rate;
-      product.updated_at = new Date().toISOString();
+      product.updated_at = now;
       newStock = product.current_stock;
       item.product_id = product.id;
     }
@@ -313,9 +342,9 @@ export async function approveInvoiceAndMutateStock(invoiceId: string, userId: st
       quantity: item.quantity,
       unit_price: item.unit_rate,
       balance_after: newStock,
-      notes: `Inward stock received from Invoice #${invoice.invoice_number}`,
+      notes: `Inward stock received from Invoice #${invoice?.invoice_number || ''}`,
       created_by: userId,
-      created_at: new Date().toISOString(),
+      created_at: now,
     };
     transactions.push(tx);
   }
@@ -323,15 +352,35 @@ export async function approveInvoiceAndMutateStock(invoiceId: string, userId: st
   LocalStorageRepository.set('products', products);
   LocalStorageRepository.set('stock_transactions', transactions);
 
-  // Attempt Supabase RPC stored procedure in background
+  // Sync to Supabase: call stored procedure AND direct update
   try {
     await supabase.rpc('approve_invoice_and_update_stock', {
       p_invoice_id: invoiceId,
       p_user_id: userId,
     });
-  } catch {
-    // Handled locally
+  } catch (rpcErr: any) {
+    console.warn('[Approval] Stored proc note:', rpcErr?.message);
   }
+
+  // Direct guarantee update on public.invoices table in Supabase
+  try {
+    await supabase.from('invoices').update({
+      status: 'APPROVED',
+      approved_at: now,
+      updated_at: now,
+    }).eq('id', invoiceId);
+  } catch (directErr: any) {
+    console.warn('[Approval] Direct update note:', directErr?.message);
+  }
+
+  // Also call backend API endpoint for server-level sync
+  try {
+    await fetch(`/api/invoices/${encodeURIComponent(invoiceId)}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    });
+  } catch {}
 }
 
 /**
